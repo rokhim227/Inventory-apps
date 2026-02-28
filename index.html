@@ -654,12 +654,14 @@
             const dd = document.getElementById(id); if(dd) dd.classList.toggle('hidden');
         }
 
-        // FUNGSI SINKRONISASI
+        // FUNGSI SINKRONISASI - Diberi fallback object aman
         function syncLocalState(data, keepLocalStock = false) {
-            State.settings = data.settings || {}; 
-            State.restos = data.restos || []; 
-            State.users = data.users || [];
-            State.masterData = data.master || []; 
+            if (!data || typeof data !== 'object') return; // Mencegah blank karena error undefined
+
+            State.settings = data.settings || State.settings || {}; 
+            State.restos = data.restos || State.restos || []; 
+            State.users = data.users || State.users || [];
+            State.masterData = data.master || State.masterData || []; 
             
             if (!keepLocalStock) {
                 let rawStock = data.stock || [];
@@ -714,9 +716,9 @@
                 });
             }
 
-            State.inHistory = data.inbound || []; 
-            State.outHistory = data.outbound || []; 
-            State.adjustments = data.adjustments || [];
+            State.inHistory = data.inbound || State.inHistory || []; 
+            State.outHistory = data.outbound || State.outHistory || []; 
+            State.adjustments = data.adjustments || State.adjustments || [];
         }
 
         function refreshGlobalData(btn) {
@@ -846,7 +848,7 @@
                     setTimeout(() => { document.getElementById('loginScreen').classList.add('hidden'); document.getElementById('mainApp').classList.remove('hidden'); navigate('dashboard'); }, 300);
                     Swal.fire({ icon: 'success', title: `Selamat Datang, ${res.user.name}`, toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
                 } else Swal.fire({icon: 'error', title: 'Login Gagal', text: 'Username atau Password salah!'});
-            }).catch(e => { btn.innerHTML = `<span>Masuk</span>`; btn.disabled = false; });
+            }).catch(e => { btn.innerHTML = `<span>Masuk</span>`; btn.disabled = false; Swal.fire({icon: 'error', title: 'Error Koneksi', text: 'Gagal terhubung dengan server!'});});
         }
 
         function logout() {
@@ -2011,12 +2013,14 @@
                 if(res.isConfirmed) {
                     Swal.fire({title: 'Memproses...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
                     runGas('saveAdjustment', res.value).then(d => { 
-                        syncLocalState(d); 
+                        if(d) syncLocalState(d); 
                         navigate('adjustment'); 
                         
                         runGas('sendAdjustmentEmail', res.value).catch(e => console.log('Simulasi email lokal'));
 
                         Swal.fire('Berhasil', 'Pengajuan adjustment terkirim dan notifikasi email telah diteruskan ke Admin.', 'success'); 
+                    }).catch(e => {
+                        Swal.fire('Error', 'Gagal mengajukan adjustment.', 'error');
                     });
                 }
                 delete window.tempAdjStockData;
@@ -2080,7 +2084,13 @@
             Swal.fire({title:'Approve Data?', text:'Stock database akan langsung berubah sesuai dengan Qty Fisik.', icon:'warning', showCancelButton:true, confirmButtonColor:'#10b981', confirmButtonText:'Ya, Approve'}).then(r => {
                 if(r.isConfirmed) {
                     Swal.fire({title: 'Memproses...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
-                    runGas('approveAdjustment', id).then(d => { syncLocalState(d); navigate('adjustment'); Swal.fire('Approved!', '', 'success'); });
+                    runGas('approveAdjustment', id).then(d => { 
+                        if(d) syncLocalState(d); 
+                        navigate('adjustment'); 
+                        Swal.fire('Approved!', '', 'success'); 
+                    }).catch(e => {
+                        Swal.fire('Error', 'Gagal memproses approval.', 'error');
+                    });
                 }
             });
         }
@@ -2088,7 +2098,13 @@
             Swal.fire({title:'Reject Data?', icon:'warning', showCancelButton:true, confirmButtonColor:'#ef4444', confirmButtonText:'Ya, Reject'}).then(r => {
                 if(r.isConfirmed) {
                     Swal.fire({title: 'Memproses...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
-                    runGas('rejectAdjustment', id).then(d => { syncLocalState(d); navigate('adjustment'); Swal.fire('Rejected!', '', 'success'); });
+                    runGas('rejectAdjustment', id).then(d => { 
+                        if(d) syncLocalState(d); 
+                        navigate('adjustment'); 
+                        Swal.fire('Rejected!', '', 'success'); 
+                    }).catch(e => {
+                        Swal.fire('Error', 'Gagal memproses penolakan.', 'error');
+                    });
                 }
             });
         }
@@ -2123,26 +2139,48 @@
                 logo_url: document.getElementById('setAppLogo').value,
                 admin_email: document.getElementById('setAdminEmail').value
             }).then(d => { 
-                syncLocalState(d); 
+                if(d) syncLocalState(d); 
                 applySettings(); 
                 Swal.fire({icon: 'success', title: 'Tersimpan', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500}); 
+            }).catch(e => {
+                Swal.fire('Error', 'Gagal menyimpan pengaturan aplikasi. Pastikan koneksi API aktif.', 'error');
             });
         }
+
         function saveNewResto() {
             const val = document.getElementById('setNewResto').value; if(!val) return;
             Swal.fire({title: 'Menyimpan...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
-            runGas('addResto', val).then(d => { syncLocalState(d); document.getElementById('setNewResto').value=''; 
+            
+            // Optimistic update
+            State.restos.push(val);
+            document.getElementById('setNewResto').value=''; 
+            renderRestoTable();
+
+            runGas('addResto', val).then(d => { 
+                if(d) syncLocalState(d); 
                 document.querySelectorAll('.set-resto-select').forEach(sel => sel.innerHTML = State.restos.map(r=>`<option value="${r}">${r}</option>`).join(''));
-                renderRestoTable(); Swal.fire({icon: 'success', title: 'Tersimpan', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500}); 
+                renderRestoTable(); 
+                Swal.fire({icon: 'success', title: 'Tersimpan', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500}); 
+            }).catch(e => {
+                refreshGlobalData(); // Rollback jika gagal
+                Swal.fire('Error', 'Gagal menambah resto.', 'error');
             });
         }
+
         function deleteRestoItem(idx) {
-            Swal.fire({title: 'Menghapus...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
-            runGas('deleteResto', idx).then(d=>{syncLocalState(d);renderRestoTable();
-                document.querySelectorAll('.set-resto-select').forEach(sel => sel.innerHTML = State.restos.map(r=>`<option value="${r}">${r}</option>`).join(''));
-                Swal.close();
+            Swal.fire({title: 'Hapus Data Resto?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Ya, Hapus', confirmButtonColor: '#ef4444'}).then(r => {
+                if(r.isConfirmed) {
+                    Swal.fire({title: 'Menghapus...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+                    runGas('deleteResto', idx).then(d=>{
+                        if(d) syncLocalState(d);
+                        renderRestoTable();
+                        document.querySelectorAll('.set-resto-select').forEach(sel => sel.innerHTML = State.restos.map(r=>`<option value="${r}">${r}</option>`).join(''));
+                        Swal.fire({icon: 'success', title: 'Terhapus', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500});
+                    }).catch(e => { Swal.fire('Error', 'Gagal menghapus resto', 'error'); });
+                }
             });
         }
+
         function renderRestoTable() {
             document.getElementById('tblRestoList').innerHTML = State.restos.map((r,i)=>`<tr class="hover:bg-slate-50"><td class="px-5 py-3">${r}</td><td class="px-5 py-3 text-center"><button onclick="deleteRestoItem(${i})" class="text-red-500 hover:bg-red-50 px-2 py-1 rounded"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
         }
@@ -2156,14 +2194,47 @@
         document.addEventListener('change', e => { if(e.target.id==='setUserResto' && document.getElementById('setUserRole').value==='Store Manager') document.getElementById('setUserLogin').value=e.target.value; });
         
         function saveNewUser() {
-            const payload = { id: 'U'+Date.now(), name: document.getElementById('setUserName').value, username: document.getElementById('setUserLogin').value, pass: document.getElementById('setUserPass').value, role: document.getElementById('setUserRole').value, resto: document.getElementById('setUserRole').value==='Admin' ? 'Semua Resto' : document.getElementById('setUserResto').value };
+            const payload = { 
+                id: 'U'+Date.now(), 
+                name: document.getElementById('setUserName').value, 
+                username: document.getElementById('setUserLogin').value, 
+                pass: document.getElementById('setUserPass').value, 
+                role: document.getElementById('setUserRole').value, 
+                resto: document.getElementById('setUserRole').value==='Admin' ? 'Semua Resto' : document.getElementById('setUserResto').value 
+            };
+            
+            if(!payload.name || !payload.username || !payload.pass) return Swal.fire('Peringatan', 'Harap isi Nama, Username, dan Password!', 'warning');
+
             Swal.fire({title: 'Menyimpan...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
-            runGas('saveUser', payload).then(d=>{ syncLocalState(d); renderUserTable(); Swal.fire({icon: 'success', title: 'Tersimpan', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500}); document.getElementById('setUserName').value=''; document.getElementById('setUserPass').value=''; });
+            
+            // Optimistic Update
+            State.users.push({ID: payload.id, Nama: payload.name, Username: payload.username, Password: payload.pass, Role: payload.role, Resto: payload.resto});
+            renderUserTable();
+            document.getElementById('setUserName').value=''; document.getElementById('setUserLogin').value=''; document.getElementById('setUserPass').value='';
+
+            runGas('saveUser', payload).then(d=>{ 
+                if(d) syncLocalState(d); 
+                renderUserTable(); 
+                Swal.fire({icon: 'success', title: 'Tersimpan', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500}); 
+            }).catch(e => {
+                refreshGlobalData();
+                Swal.fire('Error', 'Gagal menyimpan pengguna baru.', 'error');
+            });
         }
+
         function deleteUserItem(idx) {
-            Swal.fire({title: 'Menghapus...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
-            runGas('deleteUser', idx).then(d=>{syncLocalState(d);renderUserTable();Swal.close();});
+            Swal.fire({title: 'Hapus Pengguna?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Ya, Hapus', confirmButtonColor: '#ef4444'}).then(r => {
+                if(r.isConfirmed) {
+                    Swal.fire({title: 'Menghapus...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+                    runGas('deleteUser', idx).then(d=>{
+                        if(d) syncLocalState(d);
+                        renderUserTable();
+                        Swal.fire({icon: 'success', title: 'Terhapus', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500});
+                    }).catch(e => { Swal.fire('Error', 'Gagal menghapus pengguna.', 'error'); });
+                }
+            });
         }
+
         function renderUserTable() {
             document.getElementById('tblUserList').innerHTML = State.users.map((u,i)=>`<tr><td class="px-5 py-2">${u.Nama}</td><td class="px-5 py-2">${u.Username}</td><td class="px-5 py-2 font-mono text-slate-500">${u.Password}</td><td class="px-5 py-2">${u.Role}</td><td class="px-5 py-2">${u.Resto}</td><td class="px-5 py-2 text-center flex justify-center gap-1">
                 <button onclick="viewUser(${i})" class="text-blue-500 hover:bg-blue-50 px-2 py-1 rounded" title="View Detail"><i class="fa-solid fa-eye"></i></button>
@@ -2186,20 +2257,60 @@
             if(u.Role !== 'Admin') document.getElementById('setUserResto').value = u.Resto;
             
             Swal.fire({title: 'Mempersiapkan...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
-            runGas('deleteUser', idx).then(d => { syncLocalState(d); renderUserTable(); Swal.fire('Mode Edit', 'Data pengguna dipindahkan ke form. Silakan ubah lalu klik Buat Akun.', 'info'); });
+            runGas('deleteUser', idx).then(d => { 
+                if(d) syncLocalState(d); 
+                renderUserTable(); 
+                Swal.fire('Mode Edit', 'Data pengguna dipindahkan ke form. Silakan ubah lalu klik Buat Akun.', 'info'); 
+            }).catch(e => {
+                Swal.fire('Error', 'Gagal memproses mode edit.', 'error');
+            });
             document.getElementById('setTab-user').scrollIntoView({behavior: 'smooth'});
         }
 
         // Master Data
         function saveMasterData() {
-            const payload = { kode: document.getElementById('setMstKode').value, nama: document.getElementById('setMstNama').value, kat: document.getElementById('setMstKat').value, resto: document.getElementById('setMstResto').value, satB: document.getElementById('setMstSatB').value, satK: document.getElementById('setMstSatK').value, konv: document.getElementById('setMstKonv').value };
+            const payload = { 
+                kode: document.getElementById('setMstKode').value, 
+                nama: document.getElementById('setMstNama').value, 
+                kat: document.getElementById('setMstKat').value, 
+                resto: document.getElementById('setMstResto').value, 
+                satB: document.getElementById('setMstSatB').value, 
+                satK: document.getElementById('setMstSatK').value, 
+                konv: document.getElementById('setMstKonv').value 
+            };
+
+            if(!payload.kode || !payload.nama || !payload.satB || !payload.satK || !payload.konv) return Swal.fire('Peringatan', 'Harap isi kelengkapan Master Data secara penuh!', 'warning');
+
             Swal.fire({title: 'Menyimpan...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
-            runGas('saveMaster', payload).then(d=>{ syncLocalState(d); renderMasterTable(); Swal.fire({icon: 'success', title: 'Tersimpan', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500}); });
+            
+            // Optimistic Update
+            State.masterData.push({KodeBahan: payload.kode, NamaBahan: payload.nama, Kategori: payload.kat, Resto: payload.resto, SatuanBesar: payload.satB, SatuanKecil: payload.satK, Konversi: payload.konv});
+            renderMasterTable();
+            document.getElementById('setMstKode').value=''; document.getElementById('setMstNama').value=''; document.getElementById('setMstSatB').value=''; document.getElementById('setMstSatK').value=''; document.getElementById('setMstKonv').value='';
+
+            runGas('saveMaster', payload).then(d=>{ 
+                if(d) syncLocalState(d); 
+                renderMasterTable(); 
+                Swal.fire({icon: 'success', title: 'Tersimpan', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500}); 
+            }).catch(e => {
+                refreshGlobalData();
+                Swal.fire('Error', 'Gagal menyimpan Master Data.', 'error');
+            });
         }
+
         function deleteMasterItem(idx) {
-            Swal.fire({title: 'Menghapus...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
-            runGas('deleteMaster', idx).then(d=>{syncLocalState(d);renderMasterTable();Swal.close();});
+            Swal.fire({title: 'Hapus Master Data?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Ya, Hapus', confirmButtonColor: '#ef4444'}).then(r => {
+                if(r.isConfirmed) {
+                    Swal.fire({title: 'Menghapus...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+                    runGas('deleteMaster', idx).then(d=>{
+                        if(d) syncLocalState(d);
+                        renderMasterTable();
+                        Swal.fire({icon: 'success', title: 'Terhapus', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500});
+                    }).catch(e => { Swal.fire('Error', 'Gagal menghapus data master.', 'error'); });
+                }
+            });
         }
+
         function renderMasterTable() {
             document.getElementById('tblMasterList').innerHTML = State.masterData.map((m,i)=>`<tr>
                 <td class="px-5 py-2 font-mono text-blue-600">${m.KodeBahan}</td>
@@ -2230,7 +2341,11 @@
             document.getElementById('setMstKonv').value = m.Konversi;
             
             Swal.fire({title: 'Mempersiapkan...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
-            runGas('deleteMaster', idx).then(d => { syncLocalState(d); renderMasterTable(); Swal.fire('Mode Edit', 'Data bahan dipindahkan ke form input di atas. Silakan ubah lalu klik Simpan Master Data.', 'info'); });
+            runGas('deleteMaster', idx).then(d => { 
+                if(d) syncLocalState(d); 
+                renderMasterTable(); 
+                Swal.fire('Mode Edit', 'Data bahan dipindahkan ke form input di atas. Silakan ubah lalu klik Simpan Master Data.', 'info'); 
+            }).catch(e => { Swal.fire('Error', 'Gagal memproses mode edit', 'error'); });
             document.getElementById('setTab-master').scrollIntoView({behavior: 'smooth'});
         }
 
