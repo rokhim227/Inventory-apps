@@ -48,7 +48,6 @@
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
-<!-- h-screen diubah jadi h-[100dvh] untuk mencegah toolbar browser mobile menutupi bagian bawah layar -->
 <body class="text-slate-800 antialiased overflow-hidden h-[100dvh] flex relative">
 
     <!-- GLOBAL DATA LOADER -->
@@ -355,7 +354,7 @@
             </form>
 
             <!-- SCAN HISTORY TABLE -->
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden mt-6 mb-20 md:mb-0">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden mt-6 mb-24 md:mb-0">
                 <div class="p-5 border-b border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <h3 class="font-bold text-slate-800" id="scanHistTitle">Riwayat Transaksi</h3>
                     <div class="flex gap-2 flex-wrap">
@@ -364,21 +363,27 @@
                         <button onclick="exportTable('excel')" class="bg-green-50 text-green-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-green-100 transition shadow-sm flex items-center"><i class="fa-solid fa-file-excel mr-1.5"></i> Excel</button>
                     </div>
                 </div>
-                <div class="p-5 border-b border-slate-100 bg-slate-50/50">
+                <div class="p-5 border-b border-slate-100 bg-slate-50/50 space-y-3">
+                    <!-- Ditambahkan: Fitur Search Responsive untuk Riwayat Transaksi -->
+                    <div class="relative w-full">
+                        <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-400"></i>
+                        <input type="text" id="scanHistSearch" onkeyup="filterScanHistory()" class="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none shadow-sm" placeholder="Cari Riwayat (Kode, Nama Bahan, Petugas)...">
+                    </div>
+                    
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 w-full">
                         <div class="flex items-center gap-2 w-full col-span-1 md:col-span-2">
-                            <input type="date" id="scanHistStartDate" onchange="filterScanHistory()" class="border border-slate-200 bg-slate-50 rounded-lg px-3 py-2 text-sm outline-none w-full">
+                            <input type="date" id="scanHistStartDate" onchange="filterScanHistory()" class="border border-slate-200 bg-slate-50 rounded-lg px-3 py-2 text-sm outline-none w-full shadow-sm">
                             <span class="text-slate-400 text-xs font-medium">s/d</span>
-                            <input type="date" id="scanHistEndDate" onchange="filterScanHistory()" class="border border-slate-200 bg-slate-50 rounded-lg px-3 py-2 text-sm outline-none w-full">
+                            <input type="date" id="scanHistEndDate" onchange="filterScanHistory()" class="border border-slate-200 bg-slate-50 rounded-lg px-3 py-2 text-sm outline-none w-full shadow-sm">
                         </div>
                         <div class="w-full">
-                            <select id="scanHistCategory" onchange="filterScanHistory()" class="w-full border border-slate-200 bg-slate-50 rounded-lg px-3 py-2 text-sm outline-none">
+                            <select id="scanHistCategory" onchange="filterScanHistory()" class="w-full border border-slate-200 bg-slate-50 rounded-lg px-3 py-2 text-sm outline-none shadow-sm">
                                 <option value="">Semua Kategori</option><option value="Frozen">Frozen</option><option value="Dry">Dry</option>
                             </select>
                         </div>
                         <!-- Checkbox Dropdown Filter untuk Resto (Responsive di Scan) -->
                         <div class="relative w-full admin-only-element" id="wrap-filter-resto-scan">
-                            <button type="button" onclick="toggleDropdown('dd-scan-resto')" class="w-full border border-slate-200 bg-slate-50 rounded-lg px-3 py-2 text-sm text-left flex justify-between items-center outline-none focus:ring-2 focus:ring-blue-500 transition">
+                            <button type="button" onclick="toggleDropdown('dd-scan-resto')" class="w-full border border-slate-200 bg-slate-50 rounded-lg px-3 py-2 text-sm text-left flex justify-between items-center outline-none focus:ring-2 focus:ring-blue-500 transition shadow-sm">
                                 <span id="lbl-scan-resto" class="truncate font-medium text-slate-600">Semua Resto</span>
                                 <i class="fa-solid fa-chevron-down ml-2 text-slate-400"></i>
                             </button>
@@ -428,21 +433,21 @@
                 <div class="flex flex-col lg:flex-row gap-3 items-start lg:items-center w-full">
                     <div class="relative w-full lg:flex-1">
                         <i class="fa-solid fa-search absolute left-3 top-3 text-slate-400"></i>
-                        <input type="text" id="searchInput" onkeyup="filterTable()" class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Cari data...">
+                        <input type="text" id="searchInput" onkeyup="filterTable()" class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none shadow-sm" placeholder="Cari data...">
                     </div>
                     <div class="flex flex-col sm:flex-row flex-wrap gap-3 w-full lg:w-auto">
                         <div class="flex items-center gap-2 w-full sm:w-auto">
-                            <input type="date" id="filterStartDate" onchange="filterTable()" class="border border-slate-200 bg-slate-50 rounded-lg px-3 py-2 text-sm outline-none w-full sm:w-auto">
+                            <input type="date" id="filterStartDate" onchange="filterTable()" class="border border-slate-200 bg-slate-50 rounded-lg px-3 py-2 text-sm outline-none w-full sm:w-auto shadow-sm">
                             <span class="text-slate-400 text-xs font-medium">s/d</span>
-                            <input type="date" id="filterEndDate" onchange="filterTable()" class="border border-slate-200 bg-slate-50 rounded-lg px-3 py-2 text-sm outline-none w-full sm:w-auto">
+                            <input type="date" id="filterEndDate" onchange="filterTable()" class="border border-slate-200 bg-slate-50 rounded-lg px-3 py-2 text-sm outline-none w-full sm:w-auto shadow-sm">
                         </div>
-                        <select id="filterCategory" onchange="filterTable()" class="border border-slate-200 bg-slate-50 rounded-lg px-3 py-2 text-sm outline-none w-full sm:w-auto">
+                        <select id="filterCategory" onchange="filterTable()" class="border border-slate-200 bg-slate-50 rounded-lg px-3 py-2 text-sm outline-none w-full sm:w-auto shadow-sm">
                             <option value="">Semua Kategori</option><option value="Frozen">Frozen</option><option value="Dry">Dry</option>
                         </select>
                         
                         <!-- Checkbox Dropdown Filter untuk Resto -->
                         <div class="relative w-full sm:w-48 admin-only-element" id="wrap-filter-resto-data">
-                            <button type="button" onclick="toggleDropdown('dd-data-resto')" class="w-full border border-slate-200 bg-slate-50 rounded-lg px-3 py-2 text-sm text-left flex justify-between items-center outline-none focus:ring-2 focus:ring-blue-500 transition">
+                            <button type="button" onclick="toggleDropdown('dd-data-resto')" class="w-full border border-slate-200 bg-slate-50 rounded-lg px-3 py-2 text-sm text-left flex justify-between items-center outline-none focus:ring-2 focus:ring-blue-500 transition shadow-sm">
                                 <span id="lbl-data-resto" class="truncate font-medium text-slate-600">Semua Resto</span>
                                 <i class="fa-solid fa-chevron-down ml-2 text-slate-400"></i>
                             </button>
@@ -1568,16 +1573,23 @@
             const eDate = document.getElementById('scanHistEndDate').value;
             const cat = document.getElementById('scanHistCategory').value;
             const selRestos = State.user.role === 'Admin' ? State.selectedRestosScan : [State.user.resto];
+            const searchInput = document.getElementById('scanHistSearch');
+            const searchVal = searchInput ? searchInput.value.toLowerCase() : '';
 
             State.scanHistFiltered = h.filter(r => {
-                let matchDate = true; let matchCat = true; let matchResto = true;
+                let matchDate = true; let matchCat = true; let matchResto = true; let matchSearch = true;
                 const rDate = r.Tanggal.split(' ')[0];
                 if(sDate && rDate < sDate) matchDate = false;
                 if(eDate && rDate > eDate) matchDate = false;
                 if(cat && r.Kategori !== cat) matchCat = false;
                 if(selRestos.length > 0 && !selRestos.includes(r.Resto)) matchResto = false;
                 
-                return matchDate && matchCat && matchResto;
+                if(searchVal) {
+                    const combinedStr = `${r.KodeBahan} ${r.NamaBahan} ${r.Petugas} ${r.KodeLot || ''} ${r.KodeProduksi || ''}`.toLowerCase();
+                    if(!combinedStr.includes(searchVal)) matchSearch = false;
+                }
+                
+                return matchDate && matchCat && matchResto && matchSearch;
             });
             State.scanHistFiltered = State.scanHistFiltered.sort((a,b)=>new Date(b.Tanggal)-new Date(a.Tanggal));
             State.scanHistPage = 1; renderScanHistory();
