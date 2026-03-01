@@ -522,7 +522,12 @@
                 <div id="setTab-user" class="hidden space-y-6">
                     <h3 class="text-lg font-bold text-slate-700 border-b pb-2">Tambah Pengguna Baru</h3>
                     <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 space-y-4">
-                        <select id="setUserRole" onchange="toggleUserFields()" class="w-full md:w-1/3 border border-slate-300 rounded-lg px-4 py-2 outline-none bg-white"><option value="Admin">Admin</option><option value="Store Manager">Store Manager</option><option value="Stocker">Stocker</option></select>
+                        <select id="setUserRole" onchange="toggleUserFields()" class="w-full md:w-1/3 border border-slate-300 rounded-lg px-4 py-2 outline-none bg-white">
+                            <option value="Admin">Admin</option>
+                            <option value="Manager">Manager</option>
+                            <option value="Store Manager">Store Manager</option>
+                            <option value="Stocker">Stocker</option>
+                        </select>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div id="wrapResto" class="hidden"><label class="block text-sm mb-1">Asal Resto</label><select id="setUserResto" class="w-full border border-slate-300 rounded-lg px-4 py-2 bg-white set-resto-select"></select></div>
                             <div id="wrapName"><label class="block text-sm mb-1" id="lblUserName">Nama Lengkap</label><input type="text" id="setUserName" class="w-full border border-slate-300 rounded-lg px-4 py-2"></div>
@@ -794,12 +799,12 @@
         }
 
         const Menus = [
-            { id: 'dashboard', icon: 'fa-chart-pie', label: 'Dashboard', roles: ['Admin', 'Store Manager', 'Stocker'] },
-            { id: 'database', icon: 'fa-database', label: 'Database Stock', roles: ['Admin', 'Store Manager', 'Stocker'] },
-            { id: 'inbound', icon: 'fa-boxes-packing', label: 'Barang Masuk', roles: ['Admin', 'Store Manager', 'Stocker'] },
-            { id: 'outbound', icon: 'fa-truck-fast', label: 'Barang Keluar', roles: ['Admin', 'Store Manager', 'Stocker'] },
-            { id: 'expired', icon: 'fa-triangle-exclamation', label: 'Expired Bahan', roles: ['Admin', 'Store Manager'] },
-            { id: 'adjustment', icon: 'fa-scale-balanced', label: 'Adjustment', roles: ['Admin', 'Store Manager'] },
+            { id: 'dashboard', icon: 'fa-chart-pie', label: 'Dashboard', roles: ['Admin', 'Manager', 'Store Manager', 'Stocker'] },
+            { id: 'database', icon: 'fa-database', label: 'Database Stock', roles: ['Admin', 'Manager', 'Store Manager', 'Stocker'] },
+            { id: 'inbound', icon: 'fa-boxes-packing', label: 'Barang Masuk', roles: ['Admin', 'Manager', 'Store Manager', 'Stocker'] },
+            { id: 'outbound', icon: 'fa-truck-fast', label: 'Barang Keluar', roles: ['Admin', 'Manager', 'Store Manager', 'Stocker'] },
+            { id: 'expired', icon: 'fa-triangle-exclamation', label: 'Expired Bahan', roles: ['Admin', 'Manager', 'Store Manager'] },
+            { id: 'adjustment', icon: 'fa-scale-balanced', label: 'Adjustment', roles: ['Admin', 'Manager', 'Store Manager'] },
             { id: 'settings', icon: 'fa-gear', label: 'Settings', roles: ['Admin'] }
         ];
 
