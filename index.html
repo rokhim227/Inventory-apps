@@ -2103,8 +2103,12 @@
                 title: 'Pengajuan Adjustment',
                 html: `<div class="text-left space-y-4 mt-3">
                         <div class="w-full">
-                            <label class="block text-xs font-medium text-slate-500 mb-1">Pilih Bahan (Berdasarkan Database & Batch)</label>
-                            <select id="adjKodeIdx" onchange="updateAdjPreview()" class="w-full border border-slate-300 bg-slate-50 px-3 py-2 text-sm rounded-lg outline-none focus:ring-2 focus:ring-blue-500" style="max-width: 100%; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Cari & Pilih Bahan (Database & Batch)</label>
+                            <div class="relative mb-2">
+                                <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-400"></i>
+                                <input type="text" id="adjSearchBahan" onkeyup="filterAdjDropdown()" class="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ketik nama/kode bahan...">
+                            </div>
+                            <select id="adjKodeIdx" onchange="updateAdjPreview()" class="w-full border border-slate-300 bg-slate-50 px-3 py-2 text-sm rounded-lg outline-none focus:ring-2 focus:ring-blue-500 custom-scrollbar" style="max-width: 100%; text-overflow: ellipsis; overflow-x: hidden; white-space: nowrap;" size="4">
                                 ${stockOptions}
                             </select>
                         </div>
@@ -2155,12 +2159,38 @@
             });
         }
 
+        window.filterAdjDropdown = function() {
+            const query = document.getElementById('adjSearchBahan').value.toLowerCase();
+            const select = document.getElementById('adjKodeIdx');
+            if(!window.tempAdjStockData || !select) return;
+            
+            const optionsHtml = window.tempAdjStockData.map((s, index) => {
+                const text = `[${s.Resto}] ${s.KodeBahan} - ${s.NamaBahan} (L:${s.KodeLot})`;
+                if (text.toLowerCase().includes(query)) {
+                    return `<option value="${index}">${text}</option>`;
+                }
+                return '';
+            }).join('');
+            
+            select.innerHTML = optionsHtml;
+            window.updateAdjPreview();
+        };
+
         window.updateAdjPreview = function() {
-            const idx = document.getElementById('adjKodeIdx').value;
-            if(!idx || !window.tempAdjStockData) return;
+            const idxElement = document.getElementById('adjKodeIdx');
+            const detailBox = document.getElementById('adjDetailBox');
+            
+            if(!idxElement || !detailBox || !window.tempAdjStockData) return;
+            
+            const idx = idxElement.value;
+            if(!idx) {
+                detailBox.innerHTML = '<div class="col-span-2 text-center text-slate-400 italic py-2">Bahan tidak ditemukan / belum dipilih</div>';
+                return;
+            }
+
             const s = window.tempAdjStockData[idx];
             
-            document.getElementById('adjDetailBox').innerHTML = `
+            detailBox.innerHTML = `
                 <div class="grid grid-cols-2 gap-y-2 gap-x-3">
                     <div class="col-span-2">
                         <span class="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Nama Bahan</span>
