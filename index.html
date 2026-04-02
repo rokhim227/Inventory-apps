@@ -1403,37 +1403,60 @@
         }
 
         function onScanSuccess(decodedText, decodedResult) {
-            closeScanner(); 
-            const cleanText = decodedText.trim().toUpperCase();
+            // Hentikan scanner dengan aman sebelum memanipulasi DOM/SweetAlert
+            if (html5QrCode && html5QrCode.isScanning) {
+                html5QrCode.stop().then(() => {
+                    processScanResult(decodedText);
+                }).catch(err => {
+                    console.log(err);
+                    processScanResult(decodedText); // Tetap lanjut meskipun gagal stop stream
+                });
+            } else {
+                processScanResult(decodedText);
+            }
+        }
 
-            // Handle scan untuk input Nomor Surat Jalan
-            if (activeScannerTarget === 'sj_number') {
-                const el = document.getElementById('sjNumber');
-                if(el) { el.value = cleanText; playBeep(); }
+        function processScanResult(decodedText) {
+            const modal = document.getElementById('scannerModal'); 
+            if(modal) modal.classList.add('hidden');
+            playBeep(); 
+            
+            const text = String(decodedText).trim().toUpperCase();
+            
+            if(State.scannerTarget === 'sj_number_out') {
+                document.getElementById('sjNumber').value = text;
+                return;
+            } else if (State.scannerTarget === 'sj_number_in') {
+                document.getElementById('inboundSearchSj').value = text; 
+                searchSjToReceive();
                 return;
             }
-            if (activeScannerTarget === 'inbound_sj') {
-                const el = document.getElementById('inboundSearchSj');
-                if(el) { el.value = cleanText; playBeep(); fetchSuratJalanForInbound(); }
-                return;
-            }
 
-            // Handle scan untuk Master Data Bahan (frm atau sj)
+            // Menentukan prefix form tujuan berdasarkan target tombol scanner
+            let prefix = 'frm'; // Default ke form input manual
+            if (State.scannerTarget === 'item_sj') prefix = 'sj';
+            else if (State.scannerTarget === 'item_manual') prefix = 'frm';
+
+            // Dapatkan Resto yang sedang aktif di form tersebut
             let selectedResto = '';
-            if (activeScannerTarget === 'frm') selectedResto = document.getElementById('frmResto') ? document.getElementById('frmResto').value.trim().toUpperCase() : '';
-            if (activeScannerTarget === 'sj') selectedResto = document.getElementById('sjResto') ? document.getElementById('sjResto').value.trim().toUpperCase() : '';
+            const restoElement = document.getElementById(prefix === 'sj' ? 'sjResto' : 'frmResto');
+            if (restoElement) selectedResto = restoElement.value.trim().toUpperCase();
+            
+            if (!selectedResto && State.user) {
+                selectedResto = State.user.resto.toUpperCase();
+            }
 
+            // Cari bahan di Master Data yang sesuai dengan Barcode dan Resto
             const item = State.masterData.find(m => 
-                String(m.KodeBahan).trim().toUpperCase() === cleanText && 
+                String(m.KodeBahan).trim().toUpperCase() === text && 
                 (selectedResto === '' || String(m.Resto).trim().toUpperCase() === selectedResto || String(m.Resto).trim().toUpperCase() === 'SEMUA RESTO')
             );
 
             if (item) {
-                playBeep();
-                selectBahan(item.KodeBahan, item.NamaBahan.replace(/'/g, "\\'"), activeScannerTarget);
-                Swal.fire({icon: 'success', title: 'Dikenali', text: `${item.KodeBahan} - ${item.NamaBahan}`, toast: true, position: 'top', showConfirmButton: false, timer: 2000});
+                // Panggil fungsi selectBahan dengan 3 argumen yang benar (kode, nama, prefix_form)
+                selectBahan(item.KodeBahan, item.NamaBahan.replace(/'/g, "\\'"), prefix);
             } else {
-                Swal.fire('Tidak Ditemukan', `Barcode [${cleanText}] tidak terdaftar di Master Data untuk resto ini.`, 'warning');
+                Swal.fire({icon:'warning', title:'Tidak Ditemukan', text:`Barcode [${text}] tidak terdaftar di Master Data untuk resto ini.`, toast:true, position:'top', timer:3500});
             }
         }
 
